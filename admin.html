@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Админ-панель — СтройМонолит</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><path d='M24 4 L6 16 V44 H18 V28 H30 V44 H42 V16 Z' fill='%231a3c5e'/><path d='M24 4 L6 16' stroke='%23e8853a' stroke-width='2.5'/></svg>">
+<style>
+:root {
+  --blue: #1a3c5e;
+  --blue-light: #2c5f8a;
+  --orange: #e8853a;
+  --orange-dark: #c96d20;
+  --green: #259240;
+  --red: #c0392b;
+  --gray-bg: #f4f6f8;
+  --gray-border: #d0d5db;
+  --text: #1a1a1a;
+  --text-light: #555;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: var(--gray-bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ====== LOGIN ====== */
+#login-screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--blue), var(--blue-light));
+  z-index: 100; padding: 20px;
+}
+.login-card {
+  background: #fff; border-radius: 16px;
+  padding: 40px 32px; width: min(100%, 400px);
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.login-card h1 { font-size: 24px; color: var(--blue); margin-bottom: 8px; }
+.login-card h1 span { color: var(--orange); }
+.login-card > p { color: var(--text-light); margin-bottom: 24px; font-size: 14px; }
+.login-card label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-light); }
+.login-card input {
+  width: 100%; padding: 12px 14px;
+  border: 2px solid var(--gray-border); border-radius: 8px;
+  font-size: 16px; margin-bottom: 16px; font-family: inherit;
+}
+.login-card input:focus { outline: none; border-color: var(--blue); }
+.login-card button {
+  width: 100%; padding: 14px;
+  background: var(--orange); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.login-card button:hover { background: var(--orange-dark); }
+.login-card button:disabled { opacity: .6; cursor: not-allowed; }
+.login-error {
+  background: #fde8e8; color: var(--red);
+  padding: 10px 14px; border-radius: 8px;
+  font-size: 14px; margin-bottom: 16px; display: none;
+}
+.login-error.show { display: block; }
+
+/* ====== APP ====== */
+#app { display: none; min-height: 100vh; }
+#app.visible { display: block; }
+
+.header {
+  background: var(--blue); color: #fff;
+  padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  box-shadow: 0 2px 12px rgba(0,0,0,.1);
+  position: sticky; top: 0; z-index: 50;
+}
+.header h1 { font-size: 20px; font-weight: 800; }
+.header h1 span { color: var(--orange); }
+.header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.badge {
+  background: var(--orange); color: #fff;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+}
+.btn {
+  padding: 10px 16px; border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: background .2s; font-family: inherit;
+  text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--orange); color: #fff; }
+.btn-primary:hover { background: var(--orange-dark); }
+.btn-ghost { background: rgba(255,255,255,.15); color: #fff; }
+.btn-ghost:hover { background: rgba(255,255,255,.25); }
+.btn-secondary { background: var(--gray-bg); color: var(--text); border: 1px solid var(--gray-border); }
+.btn-secondary:hover { background: var(--gray-border); }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ====== TABS ====== */
+.tabs {
+  background: #fff;
+  border-bottom: 2px solid var(--gray-border);
+  display: flex; gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky; top: 72px; z-index: 40;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 14px 24px;
+  font-size: 15px; font-weight: 600;
+  color: var(--text-light);
+  background: none; border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: color .2s, border-color .2s;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  color: var(--blue);
+  border-bottom-color: var(--orange);
+}
+
+.container { max-width: 1400px; margin: 0 auto; padding: 24px 16px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ====== FILTERS ====== */
+.filters {
+  display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+  align-items: center;
+}
+.filters input, .filters select {
+  padding: 10px 14px; border: 2px solid var(--gray-border);
+  border-radius: 8px; font-size: 15px; background: #fff; font-family: inherit;
+}
+.filters input { flex: 1; min-width: 200px; }
+.filters input:focus, .filters select:focus { outline: none; border-color: var(--blue); }
+
+.stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.stat-card {
+  background: #fff; padding: 16px 20px; border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.stat-card .num { font-size: 28px; font-weight: 800; color: var(--blue); }
+.stat-card .lbl { font-size: 13px; color: var(--text-light); }
+
+.leads-table {
+  background: #fff; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.leads-table table { width: 100%; border-collapse: collapse; }
+.leads-table th {
+  background: var(--blue); color: #fff;
+  padding: 12px 14px; text-align: left;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.leads-table td {
+  padding: 12px 14px; border-bottom: 1px solid var(--gray-border);
+  font-size: 14px; vertical-align: top;
+}
+.leads-table tr:last-child td { border-bottom: none; }
+.leads-table tr:hover { background: #f9fafb; }
+.leads-table .phone { font-weight: 600; white-space: nowrap; }
+.leads-table .phone a { color: var(--blue); text-decoration: none; }
+.leads-table .phone a:hover { text-decoration: underline; }
+.leads-table .comment {
+  max-width: 260px; color: var(--text-light);
+  font-size: 13px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.leads-table .date { color: #888; font-size: 13px; white-space: nowrap; }
+
+.status-select {
+  border: none; background: transparent;
+  font-weight: 600; cursor: pointer; font-size: 13px;
+  padding: 4px; border-radius: 6px; font-family: inherit;
+}
+.status-select:hover { background: var(--gray-bg); }
+
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.actions button {
+  padding: 5px 10px; font-size: 12px;
+  border: 1px solid var(--gray-border); background: #fff;
+  border-radius: 6px; cursor: pointer; font-family: inherit;
+  transition: all .2s;
+}
+.actions button:hover { background: var(--gray-bg); }
+.actions button.danger { color: var(--red); border-color: #f5c2c7; }
+.actions button.danger:hover { background: #fde8e8; }
+
+.empty { text-align: center; padding: 60px 20px; color: var(--text-light); }
+.empty .icon { font-size: 48px; opacity: .3; margin-bottom: 12px; }
+
+/* ====== SETTINGS ====== */
+.settings-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.settings-section h2 {
+  font-size: 18px; font-weight: 700;
+  color: var(--blue);
+  margin-bottom: 4px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--gray-bg);
+}
+.settings-section .section-hint {
+  font-size: 13px; color: var(--text-light);
+  margin-bottom: 20px;
+}
+.setting-row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gray-bg);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-row label {
+  font-size: 14px;
+  font-weight: 600;
+  padding-top: 10px;
+  color: var(--text);
+}
+.setting-row label .key-hint {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #999;
+  margin-top: 2px;
+  font-family: monospace;
+}
+.setting-row input,
+.setting-row textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--gray-border);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color .2s;
+}
+.setting-row input:focus,
+.setting-row textarea:focus { outline: none; border-color: var(--blue); }
+.setting-row textarea {
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.setting-row .hint {
+  font-size: 12px;
+  color: #888;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.settings-actions {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-top: 8px;
+  position: sticky;
+  bottom: 0;
+  background: var(--gray-bg);
+  padding: 16px 0;
+  border-top: 2px solid var(--gray-border);
+}
+
+.save-indicator {
+  display: none;
+  background: var(--green); color: #fff;
+  padding: 12px 20px; border-radius: 8px;
+  font-weight: 600; margin-bottom: 16px;
+}
+.save-indicator.show { display: block; }
+.save-indicator.error { background: var(--red); }
+
+/* ====== TOAST ====== */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--text); color: #fff;
+  padding: 12px 20px; border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+  z-index: 200;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s, transform .3s;
+  max-width: 90vw;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { background: var(--red); }
+
+@media (max-width: 768px) {
+  .header { padding: 12px 16px; }
+  .header h1 { font-size: 16px; }
+  .btn { padding: 8px 12px; font-size: 13px; }
+  .leads-table { overflow-x: auto; }
+  .leads-table table { min-width: 900px; }
+  .container { padding: 16px 12px; }
+  .tabs { top: 60px; }
+  .tab { padding: 12px 16px; font-size: 14px; }
+  .setting-row { grid-template-columns: 1fr; gap: 6px; }
+  .setting-row label { padding-top: 0; }
+  .settings-section { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <form class="login-card" id="login-form">
+    <h1>Строй<span>Монолит</span></h1>
+    <p>Вход в админ-панель</p>
+    <div class="login-error" id="login-error"></div>
+    <label for="login-login">Логин</label>
+    <input type="text" id="login-login" autocomplete="username" required>
+    <label for="login-password">Пароль</label>
+    <input type="password" id="login-password" autocomplete="current-password" required>
+    <button type="submit" id="login-submit">Войти</button>
+  </form>
+</div>
+
+<div id="app">
+  <header class="header">
+    <h1>Строй<span>Монолит</span> — Админка</h1>
+    <div class="header-actions">
+      <span class="badge" id="unread-badge" style="display:none">0 новых</span>
+      <a href="/" class="btn btn-ghost" target="_blank">🌐 Сайт</a>
+      <button class="btn btn-ghost" id="logout-btn">Выйти</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" role="tab" data-tab="leads" aria-selected="true">📋 Заявки</button>
+    <button class="tab" role="tab" data-tab="settings" aria-selected="false">⚙️ Настройки сайта</button>
+  </nav>
+
+  <div class="container">
+
+    <div class="tab-panel active" id="panel-leads">
+      <div class="stats">
+        <div class="stat-card"><div class="num" id="stat-total">0</div><div class="lbl">Всего заявок</div></div>
+        <div class="stat-card"><div class="num" id="stat-new">0</div><div class="lbl">Новых</div></div>
+        <div class="stat-card"><div class="num" id="stat-progress">0</div><div class="lbl">В работе</div></div>
+        <div class="stat-card"><div class="num" id="stat-done">0</div><div class="lbl">Завершено</div></div>
+      </div>
+
+      <div class="filters">
+        <input type="search" id="search-input" placeholder="Поиск по имени, телефону, комментарию...">
+        <select id="status-filter">
+          <option value="all">Все статусы</option>
+          <option value="new">Новые</option>
+          <option value="in_progress">В работе</option>
+          <option value="done">Завершённые</option>
+          <option value="spam">Спам</option>
+        </select>
+        <a href="/api/leads.csv" class="btn btn-secondary" download>📥 CSV</a>
+        <button class="btn btn-secondary" id="refresh-btn">🔄 Обновить</button>
+      </div>
+
+      <div class="leads-table" id="leads-container">
+        <div style="text-align:center;padding:40px;color:#888">Загрузка...</div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-settings">
+      <div class="save-indicator" id="save-indicator"></div>
+
+      <form id="settings-form">
+
+        <section class="settings-section">
+          <h2>🏢 Основное</h2>
+          <p class="section-hint">Название компании, слоган и главный экран</p>
+
+          <div class="setting-row">
+            <label>Название компании<span class="key-hint">site_title</span></label>
+            <input type="text" name="site_title" maxlength="100" placeholder="СтройМонолит">
+          </div>
+
+          <div class="setting-row">
+            <label>Слоган<span class="key-hint">site_tagline</span></label>
+            <input type="text" name="site_tagline" maxlength="150">
+          </div>
+
+          <div class="setting-row">
+            <label>Заголовок Hero<span class="key-hint">hero_title</span></label>
+            <textarea name="hero_title" maxlength="200"></textarea>
+          </div>
+
+          <div class="setting-row">
+            <label>Подзаголовок Hero<span class="key-hint">hero_subtitle</span></label>
+            <textarea name="hero_subtitle" maxlength="500"></textarea>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h2>📊 Статистика на главной</h2>
+          <p class="section-hint">4 блока с цифрами под hero-секцией</p>
+
+          <div class="setting-row">
+            <label>Лет на рынке<span class="key-hint">stat_years</span></label>
+            <input type="text" name="stat_years" maxlength="20">
+          </div>
+          <div class="setting-row">
+            <label>Подпись к «Лет»<span class="key-hint">stat_years_label</span></label>
+            <input type="text" name="stat_years_label" maxlength="50">
+          </div>
+
+          <div class="setting-row">
+            <label>Объектов сдано<span class="key-hint">stat_objects</span></label>
+            <input type="text" name="stat_objects" maxlength="20">
+          </div>
+          <div class="setting-row">
+            <label>Подпись к «Объектов»<span class="key-hint">stat_objects_label</span></label>
+            <input type="text" name="stat_objects_label" maxlength="50">
+          </div>
+
+          <div class="setting-row">
+            <label>Специалистов<span class="key-hint">stat_workers</span></label>
+            <input type="text" name="stat_workers" maxlength="20">
+          </div>
+          <div class="setting-row">
+            <label>Подпись к «Специалистов»<span class="key-hint">stat_workers_label</span></label>
+            <input type="text" name="stat_workers_label" maxlength="50">
+          </div>
+
+          <div class="setting-row">
+            <label>Гарантия<span class="key-hint">stat_warranty</span></label>
+            <input type="text" name="stat_warranty" maxlength="20">
+          </div>
+          <div class="setting-row">
+            <label>Подпись к «Гарантия»<span class="key-hint">stat_warranty_label</span></label>
+            <input type="text" name="stat_warranty_label" maxlength="50">
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h2>📞 Контакты</h2>
+          <p class="section-hint">Телефон, email, адрес, ссылки на соцсети</p>
+
+          <div class="setting-row">
+            <label>Телефон (отображение)<span class="key-hint">contact_phone</span></label>
+            <input type="text" name="contact_phone" maxlength="50" placeholder="+7 (4722) 40-00-00">
+          </div>
+
+          <div class="setting-row">
+            <label>Телефон (для ссылки tel:)<span class="key-hint">contact_phone_link</span></label>
+            <input type="text" name="contact_phone_link" maxlength="30" placeholder="+74722400000">
+          </div>
+
+          <div class="setting-row">
+            <label>Часы работы телефона<span class="key-hint">contact_phone_hours</span></label>
+            <input type="text" name="contact_phone_hours" maxlength="100">
+          </div>
+
+          <div class="setting-row">
+            <label>Email<span class="key-hint">contact_email</span></label>
+            <input type="email" name="contact_email" maxlength="100">
+          </div>
+
+          <div class="setting-row">
+            <label>Подпись к email<span class="key-hint">contact_email_note</span></label>
+            <input type="text" name="contact_email_note" maxlength="100">
+          </div>
+
+          <div class="setting-row">
+            <label>Адрес<span class="key-hint">contact_address</span></label>
+            <input type="text" name="contact_address" maxlength="200">
+          </div>
+
+          <div class="setting-row">
+            <label>Часы работы офиса<span class="key-hint">contact_address_hours</span></label>
+            <input type="text" name="contact_address_hours" maxlength="100">
+          </div>
+
+          <div class="setting-row">
+            <label>Ссылка ВКонтакте<span class="key-hint">contact_vk</span></label>
+            <input type="url" name="contact_vk" maxlength="300" placeholder="https://vk.com/...">
+          </div>
+
+          <div class="setting-row">
+            <label>Ссылка МАХ<span class="key-hint">contact_max</span></label>
+            <input type="url" name="contact_max" maxlength="300" placeholder="https://max.ru/...">
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h2>ℹ️ О компании</h2>
+          <p class="section-hint">Тексты в блоке «О компании»</p>
+
+          <div class="setting-row">
+            <label>Заголовок<span class="key-hint">about_title</span></label>
+            <input type="text" name="about_title" maxlength="200">
+          </div>
+
+          <div class="setting-row">
+            <label>Абзац 1<span class="key-hint">about_text_1</span></label>
+            <textarea name="about_text_1" maxlength="1000"></textarea>
+          </div>
+
+          <div class="setting-row">
+            <label>Абзац 2<span class="key-hint">about_text_2</span></label>
+            <textarea name="about_text_2" maxlength="1000"></textarea>
+          </div>
+
+          <div class="setting-row">
+            <label>Большая цифра<span class="key-hint">about_years_big</span></label>
+            <input type="text" name="about_years_big" maxlength="10">
+          </div>
+
+          <div class="setting-row">
+            <label>Подпись к цифре<span class="key-hint">about_years_desc</span></label>
+            <input type="text" name="about_years_desc" maxlength="100">
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h2>📄 Футер</h2>
+          <p class="section-hint">Подвал сайта</p>
+
+          <div class="setting-row">
+            <label>Название компании в футере<span class="key-hint">footer_brand</span></label>
+            <div>
+              <input type="text" name="footer_brand" maxlength="100" placeholder="СтройМонолит">
+              <div class="hint">Отображается в футере — над описанием компании. Если оставить пустым, подставится «Название компании» из блока «🏢 Основное».</div>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <label>Описание компании<span class="key-hint">footer_text</span></label>
+            <textarea name="footer_text" maxlength="500"></textarea>
+          </div>
+
+          <div class="setting-row">
+            <label>Копирайт<span class="key-hint">footer_copyright</span></label>
+            <input type="text" name="footer_copyright" maxlength="200" placeholder="© 2010–2026 Компания. Все права защищены.">
+          </div>
+        </section>
+
+        <div class="settings-actions">
+          <button type="submit" class="btn btn-primary" id="save-settings-btn">💾 Сохранить настройки</button>
+          <button type="button" class="btn btn-secondary" id="reset-settings-btn">↩️ Сбросить к стандартным</button>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  const API = '';
+  let allLeads = [];
+  let currentSettings = {};
+
+  function $(id) { return document.getElementById(id); }
+
+  function showToast(msg, isError = false) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.toggle('error', isError);
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso.replace(' ', 'T') + 'Z');
+    if (isNaN(d)) return iso;
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    if (isToday) return 'сегодня, ' + time;
+    return d.toLocaleDateString('ru-RU') + ', ' + time;
+  }
+
+  async function api(path, options = {}) {
+    const res = await fetch(API + path, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options
+    });
+    if (res.status === 401) {
+      showLogin();
+      throw new Error('Unauthorized');
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Ошибка');
+    return data;
+  }
+
+  function showLogin() {
+    $('login-screen').style.display = 'flex';
+    $('app').classList.remove('visible');
+  }
+  function showApp() {
+    $('login-screen').style.display = 'none';
+    $('app').classList.add('visible');
+  }
+
+  $('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('login-submit');
+    const err = $('login-error');
+    err.classList.remove('show');
+    btn.disabled = true;
+    btn.textContent = 'Вход...';
+
+    try {
+      await api('/api/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          login: $('login-login').value.trim(),
+          password: $('login-password').value
+        })
+      });
+      $('login-password').value = '';
+      showApp();
+      await Promise.all([loadLeads(), loadSettings()]);
+    } catch (e) {
+      err.textContent = e.message || 'Неверный логин или пароль';
+      err.classList.add('show');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Войти';
+    }
+  });
+
+  $('logout-btn').addEventListener('click', async () => {
+    await api('/api/logout', { method: 'POST' }).catch(() => {});
+    showLogin();
+  });
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll('.tab').forEach(t => {
+        const isActive = t.dataset.tab === target;
+        t.classList.toggle('active', isActive);
+        t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      $('panel-' + target).classList.add('active');
+    });
+  });
+
+  async function loadLeads() {
+    try {
+      const data = await api('/api/leads?limit=500');
+      allLeads = data.leads || [];
+      updateStats();
+      renderLeads();
+    } catch (e) {
+      if (e.message !== 'Unauthorized') showToast('Ошибка загрузки заявок: ' + e.message, true);
+    }
+  }
+
+  function updateStats() {
+    const total = allLeads.length;
+    const newCount = allLeads.filter(l => l.status === 'new').length;
+    const progress = allLeads.filter(l => l.status === 'in_progress').length;
+    const done = allLeads.filter(l => l.status === 'done').length;
+
+    $('stat-total').textContent = total;
+    $('stat-new').textContent = newCount;
+    $('stat-progress').textContent = progress;
+    $('stat-done').textContent = done;
+
+    const badge = $('unread-badge');
+    if (newCount > 0) {
+      badge.textContent = newCount + ' новых';
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function getFiltered() {
+    const search = $('search-input').value.trim().toLowerCase();
+    const status = $('status-filter').value;
+
+    return allLeads.filter(l => {
+      if (status !== 'all' && l.status !== status) return false;
+      if (!search) return true;
+      const haystack = `${l.name} ${l.phone} ${l.type} ${l.comment}`.toLowerCase();
+      return haystack.includes(search);
+    });
+  }
+
+  function renderLeads() {
+    const leads = getFiltered();
+    const container = $('leads-container');
+
+    if (!leads.length) {
+      container.innerHTML = `
+        <div class="empty">
+          <div class="icon">📭</div>
+          <div>${allLeads.length ? 'Ничего не найдено по фильтру' : 'Пока нет заявок'}</div>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Дата</th>
+            <th>Имя</th>
+            <th>Телефон</th>
+            <th>Тип работ</th>
+            <th>Комментарий</th>
+            <th>Статус</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${leads.map(l => `
+            <tr data-id="${l.id}">
+              <td>${l.id}</td>
+              <td class="date">${formatDate(l.created_at)}</td>
+              <td><strong>${escapeHtml(l.name)}</strong></td>
+              <td class="phone"><a href="tel:${escapeHtml(l.phone)}">${escapeHtml(l.phone)}</a></td>
+              <td>${escapeHtml(l.type || '—')}</td>
+              <td class="comment" title="${escapeHtml(l.comment)}">${escapeHtml(l.comment || '—')}</td>
+              <td>
+                <select class="status-select" data-id="${l.id}">
+                  <option value="new" ${l.status === 'new' ? 'selected' : ''}>🟡 Новый</option>
+                  <option value="in_progress" ${l.status === 'in_progress' ? 'selected' : ''}>🔵 В работе</option>
+                  <option value="done" ${l.status === 'done' ? 'selected' : ''}>🟢 Завершён</option>
+                  <option value="spam" ${l.status === 'spam' ? 'selected' : ''}>🔴 Спам</option>
+                </select>
+              </td>
+              <td>
+                <div class="actions">
+                  <button class="call" data-phone="${escapeHtml(l.phone)}">📞</button>
+                  <button class="danger delete" data-id="${l.id}">🗑</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    container.querySelectorAll('.status-select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const id = sel.dataset.id;
+        try {
+          await api('/api/leads/' + id, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: sel.value })
+          });
+          const lead = allLeads.find(l => String(l.id) === String(id));
+          if (lead) lead.status = sel.value;
+          updateStats();
+          showToast('Статус обновлён');
+        } catch (e) {
+          showToast('Ошибка: ' + e.message, true);
+          renderLeads();
+        }
+      });
+    });
+
+    container.querySelectorAll('.delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Удалить заявку?')) return;
+        try {
+          await api('/api/leads/' + btn.dataset.id, { method: 'DELETE' });
+          allLeads = allLeads.filter(l => String(l.id) !== String(btn.dataset.id));
+          updateStats();
+          renderLeads();
+          showToast('Заявка удалена');
+        } catch (e) {
+          showToast('Ошибка: ' + e.message, true);
+        }
+      });
+    });
+
+    container.querySelectorAll('.call').forEach(btn => {
+      btn.addEventListener('click', () => {
+        location.href = 'tel:' + btn.dataset.phone;
+      });
+    });
+  }
+
+  $('search-input').addEventListener('input', renderLeads);
+  $('status-filter').addEventListener('change', renderLeads);
+  $('refresh-btn').addEventListener('click', loadLeads);
+
+  async function loadSettings() {
+    try {
+      const data = await api('/api/settings');
+      currentSettings = data;
+      fillSettingsForm(data);
+    } catch (e) {
+      if (e.message !== 'Unauthorized') showToast('Ошибка загрузки настроек: ' + e.message, true);
+    }
+  }
+
+  function fillSettingsForm(settings) {
+    const form = $('settings-form');
+    for (const [key, value] of Object.entries(settings)) {
+      const field = form.elements[key];
+      if (field) field.value = value;
+    }
+  }
+
+  $('settings-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = $('settings-form');
+    const btn = $('save-settings-btn');
+    const indicator = $('save-indicator');
+
+    const data = {};
+    for (const el of form.elements) {
+      if (el.name) data[el.name] = el.value;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Сохранение...';
+    indicator.classList.remove('show', 'error');
+
+    try {
+      await api('/api/settings', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      currentSettings = { ...currentSettings, ...data };
+      indicator.textContent = '✓ Настройки сохранены. Обновите сайт (Ctrl+F5), чтобы увидеть изменения.';
+      indicator.classList.add('show');
+      indicator.classList.remove('error');
+      showToast('Настройки сохранены');
+      setTimeout(() => indicator.classList.remove('show'), 5000);
+    } catch (e) {
+      indicator.textContent = '✗ Ошибка: ' + e.message;
+      indicator.classList.add('show', 'error');
+      showToast('Ошибка сохранения', true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '💾 Сохранить настройки';
+    }
+  });
+
+  $('reset-settings-btn').addEventListener('click', async () => {
+    if (!confirm('Сбросить все настройки к значениям по умолчанию?\n\nЭто перезапишет все ваши изменения.')) return;
+    try {
+      await api('/api/settings/reset', { method: 'POST' });
+      await loadSettings();
+      showToast('Настройки сброшены');
+    } catch (e) {
+      showToast('Ошибка: ' + e.message, true);
+    }
+  });
+
+  (async () => {
+    try {
+      await api('/api/me');
+      showApp();
+      await Promise.all([loadLeads(), loadSettings()]);
+      setInterval(loadLeads, 30000);
+    } catch {
+      showLogin();
+    }
+  })();
+})();
+</script>
+</body>
+</html>
